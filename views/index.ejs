@@ -11,8 +11,13 @@
         <h1>Willkommen bei Talk Hub!</h1>
         <nav>
             <a href="/">Start</a> |
-            <a href="/login">Login</a> |
-            <a href="/register">Registrieren</a>
+            <% if (user) { %>
+            <span>Eingeloggt als <%= user.name || user.displayName || user.email %></span> |
+            <a href="/logout">Logout</a>
+            <% } else { %>
+            <a href="/auth/google">Login</a> |
+            <a href="/auth/google/register">Register with another Google account</a> |
+            <% } %>
         </nav>
     </header>
 
