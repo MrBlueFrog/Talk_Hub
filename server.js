@@ -5,6 +5,8 @@ const session = require('express-session');
 const bcrypt = require('bcrypt');
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const https = require('https');
+const fs = require('fs');
 require('dotenv').config();
 
 const app = express();
@@ -129,8 +131,13 @@ app.get('/logout', (req, res) => {
     });
 });
 
-app.listen(port, () => {
-    console.log(`Server läuft auf http://localhost:${port}`);
+const sslOptions = {
+  key: fs.readFileSync('server.key'),
+  cert: fs.readFileSync('server.cert')
+};
+
+https.createServer(sslOptions, app).listen(port, () => {
+  console.log(`HTTPS Server läuft auf https://localhost:${port}`);
 });
 
 
