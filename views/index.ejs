@@ -12,13 +12,18 @@
         <nav>
             <a href="/">Start</a> |
             <% if (user) { %>
-            <span>Eingeloggt als <%= user.name || user.displayName || user.email %></span> |
+            <span>Eingeloggt als <%= user.username || user.displayName || user.email %></span> |
             <a href="/logout">Logout</a>
             <% } else { %>
             <a href="/auth/google">Login</a> |
             <a href="/auth/google/register">Register with another Google account</a> |
             <% } %>
         </nav>
+         <% if (user) { %>
+        <div style="position: absolute; top: 20px; right: 30px;">
+            <a href="/profile" style="background: #222; color: #a0c8ff; padding: 8px 16px; border-radius: 6px; text-decoration: none;">Profil</a>
+        </div>
+        <% } %>
     </header>
 
     <main>

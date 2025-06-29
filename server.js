@@ -7,6 +7,7 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const https = require('https');
 const fs = require('fs');
+const profilRouter = require('./routes/profile');
 require('dotenv').config();
 
 const app = express();
@@ -120,10 +121,15 @@ app.get('/auth/google/callback',
 
 
 
+
+
 // Beispiel-Route
 app.get('/', (req, res) => {
     res.render('index', { user: req.user });  // sucht nach views/index.ejs
 });
+
+// Profil-Route
+app.use('/profile', profilRouter);
 
 app.get('/logout', (req, res) => {
     req.logout(() => {
