@@ -2,12 +2,14 @@ const express = require('express');
 const router = express.Router();
 const mysql = require('mysql2');
 const sanitizeHtml = require('sanitize-html');
+require('dotenv').config();
 
+// MySQL Connection
 const db = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: '',
-    database: 'talk_hub_db'
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME
 });
 
 // Auth middleware
