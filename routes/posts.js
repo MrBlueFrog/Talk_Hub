@@ -16,24 +16,44 @@ function auth(req, res, next) {
   res.redirect('/');
 }
 
-// Alle Posts anzeigen (optional, if you want /posts)
+// List all posts with search and sort
 router.get('/', async (req, res) => {
+  const search = req.query.search || '';
+  const sort = req.query.sort || 'recent';
+
+  let where = '';
+  let params = [];
+  if (search) {
+    where = `WHERE (posts.title LIKE ? OR posts.content LIKE ? OR users.username LIKE ?)`;
+    params = [`%${search}%`, `%${search}%`, `%${search}%`];
+  }
+
+  let order = '';
+  if (sort === 'likes') {
+    order = 'ORDER BY likeCount DESC, posts.id DESC';
+  } else {
+    order = 'ORDER BY posts.id DESC';
+  }
+
   const [posts] = await db.promise().query(
     `SELECT posts.id, posts.title, LEFT(posts.content, 120) AS summary, posts.erstellt_am, users.username,
-       (SELECT COUNT(*) FROM post_likes WHERE post_likes.post_id = posts.id) AS likeCount
+      (SELECT COUNT(*) FROM post_likes WHERE post_likes.post_id = posts.id) AS likeCount
      FROM posts
      JOIN users ON posts.user_id = users.id
-     ORDER BY posts.id DESC`
+     ${where}
+     ${order}
+     LIMIT 50`,
+    params
   );
-  res.render('posts', { posts, user: req.user });
+  res.render('posts', { posts, user: req.user, search, sort });
 });
 
-// Formular für neuen Post
+// New post form
 router.get('/neu', auth, (req, res) => {
   res.render('post_form', { user: req.user, msg: null });
 });
 
-// Neuen Post speichern
+// Create new post
 router.post('/neu', auth, async (req, res) => {
   const title = sanitizeHtml(req.body.title, { allowedTags: [], allowedAttributes: {} }).trim();
   const content = sanitizeHtml(req.body.content, { allowedTags: [], allowedAttributes: {} }).trim();
@@ -49,8 +69,10 @@ router.post('/neu', auth, async (req, res) => {
   res.redirect('/');
 });
 
-// Einzelnen Post mit Kommentaren anzeigen
+// Show single post with comments, comment sorting
 router.get('/:id', async (req, res) => {
+  const sort = req.query.sort || 'recent';
+
   const [posts] = await db.promise().query(
     'SELECT posts.*, users.username FROM posts JOIN users ON posts.user_id = users.id WHERE posts.id=?',
     [req.params.id]
@@ -74,22 +96,26 @@ router.get('/:id', async (req, res) => {
     userLiked = userLikeRows.length > 0;
   }
 
-  // Load comments
+  // Load comments with sorting
+  let order = '';
+  if (sort === 'likes') {
+    order = 'ORDER BY commentLikeCount DESC, kommentare.erstellt_am ASC';
+  } else {
+    order = 'ORDER BY kommentare.erstellt_am ASC';
+  }
   const [comments] = await db.promise().query(
-    'SELECT kommentare.*, users.username FROM kommentare JOIN users ON kommentare.user_id = users.id WHERE post_id=? ORDER BY kommentare.erstellt_am ASC',
+    `SELECT kommentare.*, users.username,
+      (SELECT COUNT(*) FROM comment_likes WHERE comment_likes.comment_id = kommentare.id) AS commentLikeCount
+     FROM kommentare
+     JOIN users ON kommentare.user_id = users.id
+     WHERE post_id=?
+     ${order}`,
     [req.params.id]
   );
 
   // For each comment: like count and user liked
   for (const comment of comments) {
-    // Like count
-    const [likeRows] = await db.promise().query(
-      'SELECT COUNT(*) AS likeCount FROM comment_likes WHERE comment_id = ?',
-      [comment.id]
-    );
-    comment.likeCount = likeRows[0].likeCount;
-
-    // User liked?
+    comment.likeCount = comment.commentLikeCount || 0;
     if (req.user) {
       const [userLikeRows] = await db.promise().query(
         'SELECT 1 FROM comment_likes WHERE comment_id = ? AND user_id = ?',
@@ -101,10 +127,10 @@ router.get('/:id', async (req, res) => {
     }
   }
 
-  res.render('post_detail', { post: posts[0], comments, user: req.user, likeCount, userLiked });
+  res.render('post_detail', { post: posts[0], comments, user: req.user, likeCount, userLiked, sort });
 });
 
-// Kommentar hinzufügen (mit parent_id)
+// Add comment (with optional parent_id for replies)
 router.post('/:id/kommentieren', auth, async (req, res) => {
   const content = sanitizeHtml(req.body.content, { allowedTags: [], allowedAttributes: {} }).trim();
   const parent_id = req.body.parent_id || null;
@@ -117,13 +143,12 @@ router.post('/:id/kommentieren', auth, async (req, res) => {
   res.redirect(`/posts/${req.params.id}`);
 });
 
-// Like hinzufügen (Post) - AJAX support
+// Like post (AJAX support)
 router.post('/:id/like', auth, async (req, res) => {
   await db.promise().query(
     'INSERT IGNORE INTO post_likes (user_id, post_id) VALUES (?, ?)',
     [req.user.id, req.params.id]
   );
-  // Get new like count and status
   const [[{ likeCount }]] = await db.promise().query(
     'SELECT COUNT(*) AS likeCount FROM post_likes WHERE post_id = ?',
     [req.params.id]
@@ -142,13 +167,12 @@ router.post('/:id/like', auth, async (req, res) => {
   res.redirect(req.get('referer') || '/');
 });
 
-// Like entfernen (Post) - AJAX support
+// Unlike post (AJAX support)
 router.post('/:id/unlike', auth, async (req, res) => {
   await db.promise().query(
     'DELETE FROM post_likes WHERE user_id = ? AND post_id = ?',
     [req.user.id, req.params.id]
   );
-  // Get new like count and status
   const [[{ likeCount }]] = await db.promise().query(
     'SELECT COUNT(*) AS likeCount FROM post_likes WHERE post_id = ?',
     [req.params.id]
@@ -167,13 +191,12 @@ router.post('/:id/unlike', auth, async (req, res) => {
   res.redirect(req.get('referer') || '/');
 });
 
-// Like hinzufügen (Kommentar) - AJAX support
+// Like comment (AJAX support)
 router.post('/:postId/comment/:commentId/like', auth, async (req, res) => {
   await db.promise().query(
     'INSERT IGNORE INTO comment_likes (user_id, comment_id) VALUES (?, ?)',
     [req.user.id, req.params.commentId]
   );
-  // Get new like count and status
   const [[{ likeCount }]] = await db.promise().query(
     'SELECT COUNT(*) AS likeCount FROM comment_likes WHERE comment_id = ?',
     [req.params.commentId]
@@ -192,13 +215,12 @@ router.post('/:postId/comment/:commentId/like', auth, async (req, res) => {
   res.redirect(req.get('referer') || '/');
 });
 
-// Like entfernen (Kommentar) - AJAX support
+// Unlike comment (AJAX support)
 router.post('/:postId/comment/:commentId/unlike', auth, async (req, res) => {
   await db.promise().query(
     'DELETE FROM comment_likes WHERE user_id = ? AND comment_id = ?',
     [req.user.id, req.params.commentId]
   );
-  // Get new like count and status
   const [[{ likeCount }]] = await db.promise().query(
     'SELECT COUNT(*) AS likeCount FROM comment_likes WHERE comment_id = ?',
     [req.params.commentId]

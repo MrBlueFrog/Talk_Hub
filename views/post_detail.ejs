@@ -34,6 +34,19 @@
       margin-left: 8px;
       vertical-align: middle;
     }
+    .comment-sort-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 18px;
+      align-items: center;
+    }
+    .comment-sort-bar select {
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #333;
+      background: #181c24;
+      color: #e0e6f0;
+    }
   </style>
 </head>
 <body>
@@ -77,6 +90,12 @@
 
       <section>
         <h3>Kommentare</h3>
+        <form class="comment-sort-bar" method="get" action="">
+          <select name="sort" onchange="this.form.submit()">
+            <option value="recent" <%= sort === 'recent' ? 'selected' : '' %>>Neueste zuerst</option>
+            <option value="likes" <%= sort === 'likes' ? 'selected' : '' %>>Meiste Likes</option>
+          </select>
+        </form>
         <% function renderComments(comments, parentId) { %>
           <ul style="list-style-type:none; padding-left:20px;">
             <% comments.filter(c => c.parent_id === parentId).forEach(comment => { %>

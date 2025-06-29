@@ -21,6 +21,26 @@
         z-index: 10;
       }
       header { position: relative; }
+      .search-sort-bar {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 18px;
+        align-items: center;
+      }
+      .search-sort-bar input[type="text"] {
+        padding: 6px 10px;
+        border-radius: 6px;
+        border: 1px solid #333;
+        background: #181c24;
+        color: #e0e6f0;
+      }
+      .search-sort-bar select {
+        padding: 6px 10px;
+        border-radius: 6px;
+        border: 1px solid #333;
+        background: #181c24;
+        color: #e0e6f0;
+      }
     </style>
 </head>
 <body>
@@ -46,6 +66,14 @@
     </header>
     <main>
       <div class="main-container">
+        <form class="search-sort-bar" method="get" action="/">
+          <input type="text" name="search" placeholder="Suche nach Titel, Inhalt, Nutzer..." value="<%= search || '' %>">
+          <select name="sort">
+            <option value="recent" <%= sort === 'recent' ? 'selected' : '' %>>Neueste zuerst</option>
+            <option value="likes" <%= sort === 'likes' ? 'selected' : '' %>>Meiste Likes</option>
+          </select>
+          <button type="submit" class="btn">Suchen</button>
+        </form>
         <section>
             <h2>Neueste Beiträge</h2>
             <% if (posts && posts.length) { %>
@@ -55,7 +83,11 @@
                             <a href="/posts/<%= post.id %>"><%= post.title %></a>
                         </h4>
                         <p><%= post.summary %>...</p>
-                        <small>Von <a href="/user/<%= post.username %>"><%= post.username %></a> am <%= new Date(post.erstellt_am).toLocaleString('de-DE') %></small>
+                        <small>
+                          Von <a href="/user/<%= post.username %>"><%= post.username %></a>
+                          am <%= new Date(post.erstellt_am).toLocaleString('de-DE') %>
+                          &nbsp;|&nbsp; <span title="Likes">&#8679; <%= post.likeCount %></span>
+                        </small>
                     </div>
                 <% }) %>
             <% } else { %>

@@ -121,18 +121,35 @@ app.get('/auth/google/callback',
   }
 );
 
-
-
-
-
 app.get('/', async (req, res) => {
+    const search = req.query.search || '';
+    const sort = req.query.sort || 'recent';
+
+    let where = '';
+    let params = [];
+    if (search) {
+        where = `WHERE (posts.title LIKE ? OR posts.content LIKE ? OR users.username LIKE ?)`;
+        params = [`%${search}%`, `%${search}%`, `%${search}%`];
+    }
+
+    let order = '';
+    if (sort === 'likes') {
+        order = 'ORDER BY likeCount DESC, posts.id DESC';
+    } else {
+        order = 'ORDER BY posts.id DESC';
+    }
+
     const [posts] = await db.promise().query(
-      `SELECT posts.id, posts.title, LEFT(posts.content, 120) AS summary, posts.erstellt_am, users.username
+      `SELECT posts.id, posts.title, LEFT(posts.content, 120) AS summary, posts.erstellt_am, users.username,
+        (SELECT COUNT(*) FROM post_likes WHERE post_likes.post_id = posts.id) AS likeCount
        FROM posts
        JOIN users ON posts.user_id = users.id
-       ORDER BY posts.id DESC LIMIT 10`
+       ${where}
+       ${order}
+       LIMIT 50`,
+      params
     );
-    res.render('index', { user: req.user, posts });
+    res.render('index', { user: req.user, posts, search, sort });
 });
 
 // Profil-Route
