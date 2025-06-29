@@ -6,7 +6,57 @@
   <title>Profil bearbeiten</title>
   <link rel="stylesheet" href="/css/styles.css" />
   <style>
-    .form-group { margin-bottom: 24px; }
+    body {
+      background: #181c24;
+      color: #e0e6f0;
+      font-family: Arial, sans-serif;
+    }
+    .profile-container {
+      max-width: 500px;
+      margin: 60px auto 0 auto;
+      background: #23283a;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px #0004;
+      padding: 32px 32px 24px 32px;
+    }
+    .profile-title {
+      font-size: 2em;
+      font-weight: bold;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+    .form-group {
+      margin-bottom: 24px;
+    }
+    .form-label {
+      font-weight: bold;
+      margin-bottom: 8px;
+      display: block;
+    }
+    .form-input, .form-textarea {
+      width: 100%;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #333;
+      background: #181c24;
+      color: #e0e6f0;
+      margin-bottom: 4px;
+    }
+    .btn-main {
+      background: #222;
+      color: #a0c8ff;
+      padding: 10px 24px;
+      border-radius: 6px;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 8px;
+      width: 100%;
+    }
+    .btn-main:hover {
+      background: #444;
+    }
     .back-btn {
       display: inline-block;
       margin-bottom: 24px;
@@ -20,31 +70,35 @@
     .back-btn:hover {
       background: #444;
     }
+    .msg-error {
+      background: #ff4d4d22;
+      color: #ffb3b3;
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
-  <div class="container mx-auto max-w-xl p-4">
+  <div class="profile-container">
     <a href="/" class="back-btn">← Zurück zur Startseite</a>
-    <h1 class="text-2xl font-bold mb-4">Profil bearbeiten</h1>
+    <div class="profile-title">Profil bearbeiten</div>
 
     <% if (msg) { %>
-      <div class="bg-red-200 p-2 mb-4 rounded"><%= msg %></div>
+      <div class="msg-error"><%= msg %></div>
     <% } %>
 
-    <form action="/profile" method="POST" class="space-y-4">
+    <form action="/profile" method="POST">
       <div class="form-group">
-        <label class="block font-semibold">Benutzername</label>
-        <input type="text" name="username" value="<%= profil.username || '' %>"
-               class="w-full border p-2 rounded" required>
+        <label class="form-label">Benutzername</label>
+        <input type="text" name="username" value="<%= profil.username || '' %>" class="form-input" required>
       </div>
-
       <div class="form-group">
-        <label class="block font-semibold">Beschreibung</label>
-        <textarea name="beschreibung" rows="4"
-                  class="w-full border p-2 rounded"><%= profil.beschreibung || '' %></textarea>
+        <label class="form-label">Beschreibung</label>
+        <textarea name="beschreibung" rows="4" class="form-textarea"><%= profil.beschreibung || '' %></textarea>
       </div>
-
-      <button class="bg-blue-600 text-white px-4 py-2 rounded">Speichern</button>
+      <button type="submit" class="btn-main">Speichern</button>
     </form>
   </div>
 </body>

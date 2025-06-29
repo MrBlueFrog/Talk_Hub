@@ -2,39 +2,67 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Talk Hub - Startseite</title>
     <link rel="stylesheet" href="/css/styles.css" />
+    <style>
+      .main-container { max-width: 700px; margin: 40px auto 0 auto; }
+      .post-summary { border:1px solid #333; margin:20px 0; padding:20px; border-radius: 8px; background: #23283a; }
+      nav .btn { margin-right: 8px; }
+      .user-info-corner {
+        position: absolute;
+        top: 24px;
+        right: 32px;
+        color: #a0c8ff;
+        font-weight: bold;
+        background: #23283a;
+        padding: 6px 18px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px #0004;
+        z-index: 10;
+      }
+      header { position: relative; }
+    </style>
 </head>
 <body>
     <header>
         <h1>Willkommen bei Talk Hub!</h1>
-        <nav>
-            <a href="/">Start</a> |
+        <nav style="display: flex; align-items: center; flex-wrap: wrap;">
+            <a href="/" class="btn">Start</a>
+            <a href="/posts" class="btn">Alle Beiträge</a>
             <% if (user) { %>
-            <span>Eingeloggt als <%= user.username || user.displayName || user.email %></span> |
-            <a href="/logout">Logout</a>
+                <a href="/posts/neu" class="btn">+ Neuer Post</a>
+                <a href="/profile" class="btn">Profil</a>
+                <a href="/logout" class="btn">Logout</a>
             <% } else { %>
-            <a href="/auth/google">Login</a> |
-            <a href="/auth/google/register">Register with another Google account</a> |
+                <a href="/auth/google" class="btn">Login</a>
+                <a href="/auth/google/register" class="btn">Register with another Google account</a>
             <% } %>
         </nav>
-         <% if (user) { %>
-        <div style="position: absolute; top: 20px; right: 30px;">
-            <a href="/profile" style="background: #222; color: #a0c8ff; padding: 8px 16px; border-radius: 6px; text-decoration: none;">Profil</a>
+        <% if (user) { %>
+        <div class="user-info-corner">
+            <%= user.username || user.displayName || user.email %>
         </div>
         <% } %>
     </header>
-
     <main>
+      <div class="main-container">
         <section>
-            <h2>Dein neues Online-Forum</h2>
-            <p>Hier kannst du Beiträge posten, kommentieren und liken.</p>
+            <h2>Neueste Beiträge</h2>
+            <% if (posts && posts.length) { %>
+                <% posts.forEach(post => { %>
+                    <div class="post-summary">
+                        <h4>
+                            <a href="/posts/<%= post.id %>"><%= post.title %></a>
+                        </h4>
+                        <p><%= post.summary %>...</p>
+                        <small>Von <a href="/user/<%= post.username %>"><%= post.username %></a> am <%= new Date(post.erstellt_am).toLocaleString('de-DE') %></small>
+                    </div>
+                <% }) %>
+            <% } else { %>
+                <p>Noch keine Beiträge vorhanden.</p>
+            <% } %>
         </section>
+      </div>
     </main>
-
-    <footer>
-        <p>© 2025 Talk Hub</p>
-    </footer>
 </body>
 </html>

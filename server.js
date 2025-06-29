@@ -8,6 +8,8 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const https = require('https');
 const fs = require('fs');
 const profilRouter = require('./routes/profile');
+const postsRouter = require('./routes/posts');
+const userRouter = require('./routes/user');
 require('dotenv').config();
 
 const app = express();
@@ -123,13 +125,24 @@ app.get('/auth/google/callback',
 
 
 
-// Beispiel-Route
-app.get('/', (req, res) => {
-    res.render('index', { user: req.user });  // sucht nach views/index.ejs
+app.get('/', async (req, res) => {
+    const [posts] = await db.promise().query(
+      `SELECT posts.id, posts.title, LEFT(posts.content, 120) AS summary, posts.erstellt_am, users.username
+       FROM posts
+       JOIN users ON posts.user_id = users.id
+       ORDER BY posts.id DESC LIMIT 10`
+    );
+    res.render('index', { user: req.user, posts });
 });
 
 // Profil-Route
 app.use('/profile', profilRouter);
+
+// Post-Route
+app.use('/posts', postsRouter);
+
+// User-Route
+app.use('/user', userRouter);
 
 app.get('/logout', (req, res) => {
     req.logout(() => {

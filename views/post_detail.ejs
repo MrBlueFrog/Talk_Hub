@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title><%= post.title %> - Talk Hub</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+  <style>
+    .main-container { max-width: 700px; margin: 40px auto 0 auto; }
+    .post-summary, article {
+      border:1px solid #333; margin:20px 0; padding:20px; border-radius: 8px; background: #23283a;
+    }
+    .comment-form, .reply-form {
+      background: #23283a;
+      border-radius: 6px;
+      padding: 8px;
+      margin-top: 8px;
+      display: none;
+    }
+    .comment-form textarea, .reply-form textarea {
+      background: #181c24;
+      color: #e0e6f0;
+      border: 1px solid #333;
+      border-radius: 4px;
+      width: 100%;
+      margin-bottom: 8px;
+      padding: 6px;
+    }
+    .toggle-btn {
+      background: none;
+      border: none;
+      color: #a0c8ff;
+      font-size: 1.2em;
+      cursor: pointer;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1><a href="/" style="color:inherit;text-decoration:none;">Talk Hub</a></h1>
+    <nav>
+      <a href="/" class="btn">Start</a>
+      <a href="/posts" class="btn">Alle Beiträge</a>
+      <% if (user) { %>
+        <a href="/profile" class="btn">Profil</a>
+        <a href="/logout" class="btn">Logout</a>
+      <% } else { %>
+        <a href="/auth/google" class="btn">Login</a>
+        <a href="/auth/google/register" class="btn">Register with another Google account</a>
+      <% } %>
+    </nav>
+  </header>
+
+  <main>
+    <div class="main-container">
+      <article>
+        <h2><%= post.title %></h2>
+        <p><%= post.content %></p>
+        <small>Von <a href="/user/<%= post.username %>"><%= post.username %></a> am <%= new Date(post.erstellt_am).toLocaleString('de-DE') %></small>
+        <div style="margin: 16px 0;">
+          <% if (user) { %>
+            <button
+              class="like-icon<%= userLiked ? ' liked' : '' %>"
+              title="Post liken"
+              data-like-url="/posts/<%= post.id %>/<%= userLiked ? 'unlike' : 'like' %>"
+              id="post-like-btn"
+              onclick="likePost(this); return false;">
+              &#8679;
+            </button>
+          <% } else { %>
+            <span class="like-icon disabled" title="Zum Liken bitte einloggen">&#8679;</span>
+          <% } %>
+          <span class="like-count" id="post-like-count"><%= likeCount %></span>
+        </div>
+      </article>
+
+      <section>
+        <h3>Kommentare</h3>
+        <% function renderComments(comments, parentId) { %>
+          <ul style="list-style-type:none; padding-left:20px;">
+            <% comments.filter(c => c.parent_id === parentId).forEach(comment => { %>
+              <li class="comment-box">
+                <strong><a href="/user/<%= comment.username %>"><%= comment.username %></a></strong>
+                <span style="font-size:0.9em;color:#888;">am <%= new Date(comment.erstellt_am).toLocaleString('de-DE') %></span>
+                <div><%= comment.content %></div>
+                <% if (user) { %>
+                  <button
+                    class="like-icon<%= comment.userLiked ? ' liked' : '' %>"
+                    title="Kommentar liken"
+                    data-like-url="/posts/<%= post.id %>/comment/<%= comment.id %>/<%= comment.userLiked ? 'unlike' : 'like' %>"
+                    data-comment-id="<%= comment.id %>"
+                    onclick="likeComment(this); return false;">
+                    &#8679;
+                  </button>
+                <% } else { %>
+                  <span class="like-icon disabled" title="Zum Liken bitte einloggen">&#8679;</span>
+                <% } %>
+                <span class="like-count" id="like-count-<%= comment.id %>"><%= comment.likeCount %></span>
+                <% if (user) { %>
+                  <button class="toggle-btn" onclick="toggleForm('reply-<%= comment.id %>')">+</button>
+                  <form id="reply-<%= comment.id %>" class="reply-form" action="/posts/<%= post.id %>/kommentieren" method="POST">
+                    <input type="hidden" name="parent_id" value="<%= comment.id %>">
+                    <textarea name="content" placeholder="Antwort..." required rows="2"></textarea>
+                    <button type="submit" class="btn">Antworten</button>
+                  </form>
+                <% } %>
+                <% renderComments(comments, comment.id); %>
+              </li>
+            <% }) %>
+          </ul>
+        <% } %>
+        <% renderComments(comments, null); %>
+        <% if (user) { %>
+          <button class="toggle-btn" onclick="toggleForm('main-comment-form')">+ Kommentar schreiben</button>
+          <form id="main-comment-form" class="comment-form" action="/posts/<%= post.id %>/kommentieren" method="POST">
+            <textarea name="content" placeholder="Kommentar" required rows="3"></textarea>
+            <button type="submit" class="btn">Kommentieren</button>
+          </form>
+        <% } else { %>
+          <p><a href="/auth/google">Melde dich an</a>, um zu kommentieren.</p>
+        <% } %>
+      </section>
+
+      <a href="/" class="btn" style="margin-top:20px;">Zurück zur Startseite</a>
+      <a href="/posts" class="btn" style="margin-top:20px;margin-left:20px;">Alle Beiträge</a>
+    </div>
+  </main>
+  <script>
+    function likePost(btn) {
+      const url = btn.getAttribute('data-like-url');
+      fetch(url, { method: 'POST', credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById('post-like-count').textContent = data.likeCount;
+          btn.classList.toggle('liked', data.userLiked);
+          btn.setAttribute('data-like-url', data.nextUrl);
+        })
+        .catch(err => alert('Fehler beim Liken.'));
+    }
+    function likeComment(btn) {
+      const url = btn.getAttribute('data-like-url');
+      const commentId = btn.getAttribute('data-comment-id');
+      fetch(url, { method: 'POST', credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById('like-count-' + commentId).textContent = data.likeCount;
+          btn.classList.toggle('liked', data.userLiked);
+          btn.setAttribute('data-like-url', data.nextUrl);
+        })
+        .catch(err => alert('Fehler beim Liken.'));
+    }
+    function toggleForm(id) {
+      var form = document.getElementById(id);
+      if (form.style.display === "block") {
+        form.style.display = "none";
+      } else {
+        form.style.display = "block";
+      }
+    }
+  </script>
+</body>
+</html>

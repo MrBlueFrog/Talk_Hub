@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Profil von <%= profil.username %></title>
+  <link rel="stylesheet" href="/css/styles.css" />
+  <style>
+    .profile-details-container {
+      max-width: 500px;
+      margin: 60px auto 0 auto;
+      background: #23283a;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px #0004;
+      padding: 32px 32px 24px 32px;
+      text-align: center;
+    }
+    .profile-username {
+      font-size: 2em;
+      font-weight: bold;
+      margin-bottom: 12px;
+    }
+    .profile-beschreibung {
+      color: #a0c8ff;
+      margin-bottom: 24px;
+      font-size: 1.1em;
+    }
+    .back-btn {
+      display: inline-block;
+      margin-bottom: 24px;
+      background: #222;
+      color: #a0c8ff;
+      padding: 8px 16px;
+      border-radius: 6px;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+    .back-btn:hover {
+      background: #444;
+    }
+  </style>
+</head>
+<body>
+  <div class="profile-details-container">
+    <a href="/" class="back-btn">← Zurück zur Startseite</a>
+    <div class="profile-username"><%= profil.username %></div>
+    <div class="profile-beschreibung"><%= profil.beschreibung || "Keine Beschreibung vorhanden." %></div>
+  </div>
+</body>
+</html>
